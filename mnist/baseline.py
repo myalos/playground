@@ -37,7 +37,7 @@ def display(images, labels, row, column):
         # 将图像x轴y轴的图片给去掉
         ax.axes.get_xaxis().set_visible(False)
         ax.axes.get_yaxis().set_visible(False)
-    plt.show()
+    #plt.show()
 
 display_size = 20
 #print(type(mnist_train[0][0])) # Tensor
@@ -45,7 +45,19 @@ display_size = 20
 images = torch.stack([mnist_train[x][0] for x in range(display_size)])
 labels = torch.tensor([mnist_train[x][1] for x in range(display_size)])
 
-# display(images, labels, 4, 5)
+display(images, labels, 4, 5)
+
+# 使用matplotlib 画出饼状图
+# @2022-05-02
+def drawPie(labels):
+    from collections import Counter
+    fig = plt.figure(2)
+    data = Counter(labels)
+    plt.pie(data.values(), labels = data.keys(), autopct = '%0.2f%%')
+
+
+# 下面是调用drawPie 画出饼状图
+drawPie([mnist_train[x][1] for x in range(len(mnist_train))])
 
 # 超参数设置
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -56,15 +68,21 @@ total_epoch = 20
 bs = 512
 
 # 工具函数
-def evaluate(net, test_iter):
-    total_instance, correct = 0.0, 0
-    for X, y in tqdm(test_iter):
-        X, y = X.to(device), y.to(device)
-        out = net(X)
-        total_instance += X.shape[0]
-        correct += (out.argmax(dim = 1) == y).sum().item()
-    return correct / total_instance
-
+def evaluate(net, test_iter, confusion_matrx = False):
+    net.eval()
+    pred, label = [], []
+    with torch.no_grad():
+        for X, y in tqdm(test_iter):
+            X, y = X.to(device), y.to(device)
+            out = net(X)
+            pred.append(out.argmax(dim = 1).cpu().numpy())
+            label.append(y.cpu().numpy())
+    pred = np.concatenate(pred, axis = 0)
+    label = np.concatenate(label, axis = 0)
+    if confusion_matrx:
+        from sklearn.metrics import confusion_matrix
+        return confusion_matrix(label, pred)
+    return np.sum(pred == label) / len(pred)
 train_iter = torch.utils.data.DataLoader(mnist_train, batch_size = bs, num_workers = 0, shuffle = True)
 test_iter = torch.utils.data.DataLoader(mnist_test, batch_size = bs, num_workers = 0, shuffle = False)
 
@@ -95,4 +113,11 @@ end_time = time()
 
 print(f'训练时间： {end_time - start_time}') # 91s
 
-print(f'训练后的准确率：{evaluate(model, test_iter)}') # 0.9053
+print(f'训练后的准确率：{evaluate(model, test_iter, False)}') # 0.9053
+# 训练时间是 1分28秒
+print(f'训练后的混淆矩阵是：\n {evaluate(model, test_iter, True)}')
+
+# 所有的图 最后画
+if False:
+    plt.show()
+
