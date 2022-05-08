@@ -19,9 +19,25 @@ import matplotlib.pyplot as plt
 import numpy as np
 from time import time
 
+
+# Normalize 参数的由来
+# tot = 0.0
+# for x, y in mnist_train:
+#     tot += x.sum()
+# tot /= (60000 * 28 * 28) # 得到的tot就是0.1307
+# variance = 0.0
+# for x, y in mnist_train:
+#     variance += ((x - tot) ** 2).sum()
+# torch.sqrt(variance / (60000 * 28 * 28))
+
+trans = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean = (0.1307,), std = (0.3081))
+    ])
+
 # 加载数据
-mnist_train = datasets.MNIST(root = '../data', train = True, transform = transforms.ToTensor(), download = True)
-mnist_test = datasets.MNIST(root = '../data', train = False, transform = transforms.ToTensor(), download = True)
+mnist_train = datasets.MNIST(root = '../data', train = True, transform = trans, download = True)
+mnist_test = datasets.MNIST(root = '../data', train = False, transform = trans, download = True)
 
 # 设置可复现的seed
 torch.manual_seed(215)
@@ -116,8 +132,14 @@ print(f'训练时间： {end_time - start_time}') # 91s
 print(f'训练后的准确率：{evaluate(model, test_iter, False)}') # 0.9053
 # 训练时间是 1分28秒
 print(f'训练后的混淆矩阵是：\n {evaluate(model, test_iter, True)}')
+# 上面注释里面是对应的没有用Normalize操作的结果
 
 # 所有的图 最后画
 if False:
     plt.show()
 
+# 如果加上了官方的Normalize的话
+# 初始的准确率是0.0666
+# 训练之后的准确率是0.92
+# 上面结果均是对训练集和测试集做同样的transformation
+# 看样子归一化还是比较牛逼

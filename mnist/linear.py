@@ -11,6 +11,8 @@
 #   这个是在baseline.py的基础上增加了参数的调整
 #   在baseline.py基础上加上了loss function的画图显示
 
+#   这份代码不足的地方是Average Meter比较臃肿
+
 import sys
 import torch
 import torch.nn as nn
@@ -24,16 +26,25 @@ import argparse
 from IPython import embed
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epoch', default = 20, help="epoch of learning")
+parser.add_argument('--epoch', type = int, default = 20, help="epoch of learning")
 parser.add_argument('--lr', default=0.03, help="learning rate of learning")
-parser.add_argument('--bs', default=512, help="batch size of learning")
+parser.add_argument('--bs', type=int, default=512, help="batch size of learning")
 parser.add_argument('--seed', type=int, default=215, help='random seed of learning')
 parser.add_argument('--viz', help='visualize the data', action = "store_true")
+# 如果有fashion指令的话，那么用的就是FashionMNIST，如果不是的话，用的就是MNIST
+parser.add_argument('--fashion', help = "use fashion mnist dataset", action="store_true")
 parser = parser.parse_args()
 
+
+class_names = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag", "Ankle boot"]
 # 加载数据
-mnist_train = datasets.MNIST(root = '../data', train = True, transform = transforms.ToTensor(), download = True)
-mnist_test = datasets.MNIST(root = '../data', train = False, transform = transforms.ToTensor(), download = True)
+if not parser.fashion:
+    mnist_train = datasets.MNIST(root = '../data', train = True, transform = transforms.ToTensor(), download = True)
+    mnist_test = datasets.MNIST(root = '../data', train = False, transform = transforms.ToTensor(), download = True)
+else:
+    mnist_train = datasets.FashionMNIST(root = '../data', train = True, transform = transforms.ToTensor(), download = True)
+    mnist_test = datasets.FashionMNIST(root = '../data', train = False, transform = transforms.ToTensor(), download = True)
+
 
 # 设置可复现的seed
 torch.manual_seed(215)
@@ -45,7 +56,10 @@ def display(images, labels, row, column):
     axes = axes.flatten() # axes的类型是ndarray
     for i, (ax, image, label) in enumerate(zip(axes, images, labels)):
         ax.imshow(image.numpy().transpose([1, 2, 0]), cmap = 'gray')
-        ax.set_title(label.item())
+        label = label.item()
+        if parser.fashion:
+            label = class_names[label]
+        ax.set_title(label)
         # 将图像x轴y轴的图片给去掉
         ax.axes.get_xaxis().set_visible(False)
         ax.axes.get_yaxis().set_visible(False)
@@ -64,13 +78,17 @@ if parser.viz:
 def drawPie(labels):
     from collections import Counter
     fig = plt.figure(2)
+    if parser.fashion:
+        labels = map(lambda x: class_names[x], labels)
     data = Counter(labels)
     plt.pie(data.values(), labels = data.keys(), autopct = '%0.2f%%')
+
 
 
 # 下面是调用drawPie 画出饼状图
 if parser.viz:
     drawPie([mnist_train[x][1] for x in range(len(mnist_train))])
+
 
 # 超参数设置
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -214,3 +232,8 @@ plt.legend() # 这个重要啊，不然就不会显示label了
 # 所有的图 最后画
 plt.show()
 
+# batch_size 256 epoch 40 训练时间是207秒 准确率是91.82%
+# batch_size 256 epoch 40 的fashionMNIST 准确率是83.72 左右
+_max_acc = max(eval_acc_history)
+_max_ind = eval_acc_history.index(_max_acc)
+print(_max_acc, _max_ind)
