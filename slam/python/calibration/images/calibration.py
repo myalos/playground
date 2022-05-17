@@ -1,3 +1,4 @@
+# 这个是opencv官网上面给的标定代码
 import numpy as np
 from collections import Counter
 import cv2 as cv
@@ -34,21 +35,21 @@ for fname in images:
         #cv.waitKey(0)
 ret, mtx, dist, rvecs, tvecs = cv.calibrateCamera(objpoints, imgpoints, gray.shape[::-1], None, None)
 
+print(ret)
 print(mtx)
-print(dist)
 
-for fname in images:
-    img = cv.imread(fname)
-    dst = cv.undistort(img, mtx, dist, None, mtx)
-    h, w = img.shape[:2]
-    new_mtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
-    dst2 = cv.undistort(img, mtx, dist, None, new_mtx)
-    x, y, w, h = roi
-    dst2 = dst2[y:y+h, x:x+w]
-    cv.imshow("img", img)
-    cv.imshow("dst", dst)
-    cv.imshow("dst2", dst2)
-    cv.waitKey(0)
-    #cv.imwrite('undistort/' + fname, dst2)
-
-print(new_mtx)
+#for fname in images:
+#    img = cv.imread(fname)
+#    dst = cv.undistort(img, mtx, dist, None, mtx)
+#    h, w = img.shape[:2]
+#    new_mtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w, h), 1, (w, h))
+#    dst2 = cv.undistort(img, mtx, dist, None, new_mtx)
+#    x, y, w, h = roi
+#    dst2 = dst2[y:y+h, x:x+w]
+#    cv.imshow("img", img)
+#    cv.imshow("dst", dst)
+#    cv.imshow("dst2", dst2)
+#    cv.waitKey(0)
+#    #cv.imwrite('undistort/' + fname, dst2)
+#
+#print(new_mtx)

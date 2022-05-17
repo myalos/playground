@@ -7,6 +7,7 @@
 
 using namespace std;
 typedef vector<Sophus::SE3d, Eigen::aligned_allocator<Sophus::SE3d>> TrajectoryType;
+//Vector6d的定义
 typedef Eigen::Matrix<double, 6, 1> Vector6d;
 
 void showPointCloud(const vector<Vector6d, Eigen::aligned_allocator<Vector6d>> &pointcloud);
@@ -14,6 +15,7 @@ void showPointCloud(const vector<Vector6d, Eigen::aligned_allocator<Vector6d>> &
 int main(int argc, char *argv[])
 {
     vector<cv::Mat> colorImgs, depthImgs;
+    //下面是一个SE3d的向量
     TrajectoryType poses;
     ifstream fin("./pose.txt");
     if(!fin){
@@ -22,6 +24,7 @@ int main(int argc, char *argv[])
     }
     //读数据
     for(int i = 0; i < 5; i ++){
+        // boost format类来进行格式化字符串
         boost::format fmt("./%s/%d.%s");
         colorImgs.push_back(cv::imread((fmt % "color" % (i + 1) % "png").str()));
         depthImgs.push_back(cv::imread((fmt % "depth" % (i + 1 ) % "pgm").str(), -1)); //使用-1读取原始图像？ 是什么意思？
@@ -31,6 +34,7 @@ int main(int argc, char *argv[])
         //从pose.txt中读取7个数字
         for (auto &d : data)
             fin >> d;
+        //SE3d的构造方法是 用一个Quaterniond和一个Vector3d来进行构造
         Sophus::SE3d pose(Eigen::Quaterniond(data[6], data[3], data[4], data[5]),
                 Eigen::Vector3d(data[0], data[1], data[2]));
         poses.push_back(pose);
@@ -42,8 +46,10 @@ int main(int argc, char *argv[])
     double fx = 518.0;
     double fy = 519.0;
     double depthScale = 1000.0; // 这个depthScale 有什么用呢
+    //因为对于16位的整型 最小值是1，需要有一个比例来获得1以下的深度
     // 下面这个就等价于 vector<Vector6d> 语法上要加上后面的
     vector<Vector6d, Eigen::aligned_allocator<Vector6d>> pointcloud;
+    // 这个reserve函数使得vector的容量至少能够容纳n个元素
     pointcloud.reserve(1000000);
     for(int i = 0;i < 5; i ++){
         cout << "转换图像中: " << i + 1 << endl;
@@ -52,6 +58,7 @@ int main(int argc, char *argv[])
         Sophus::SE3d T = poses[i];
         for (int v= 0; v < color.rows; v ++){
             for(int u = 0; u < color.cols; u ++){
+                // 这个depth.ptr是个什么操作
                 unsigned int d = depth.ptr<unsigned short>(v)[u];
                 if (d == 0) continue;
                 Eigen::Vector3d point;

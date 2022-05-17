@@ -7,7 +7,12 @@
 #
 # description:
 #   这个里面是用DANN版的MLP来进行MNIST的训练
+#   这是一个需要debug的代码，loss没有怎么降，dev acc一直都是0.06，跟没训练是一样的，train loss 大概在3.几基本没降
+#   后来发现我的classifier 是用的reverse_feature
+#   而我的domain classifer 是用的feature
 
+from tensorboardX import SummaryWriter
+import sys
 import torch
 import torch.nn as nn
 import numpy as np
@@ -65,6 +70,8 @@ svhn_test_iter = DataLoader(svhn_test, shuffle = False, batch_size = 128, num_wo
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'使用的设备是 {device}')
 
+writer = SummaryWriter('log')
+
 # DANN
 class ReverseLayerF(Function):
     @staticmethod
@@ -89,10 +96,16 @@ class DANN(nn.Module):
     # 这个output要output两个输出
     def forward(self, input_data, alpha):
         feature = self.feature(input_data)
-        reverse_feature = ReverseLayerF(feature, alpha)
+        # 不要忘了apply
+        #reverse_feature = ReverseLayerF(feature, alpha)
+        #class_output = self.classifier(feature)
+        #之前是这么写的，这么写就有问题 根本就没有用到RLF
+        reverse_feature = ReverseLayerF.apply(feature, alpha)
         class_output = self.classifier(feature)
-        domain_output = self.domain(feature)
+        domain_output = self.domain(reverse_feature)
         return class_output, domain_output
+
+
 
 model = DANN()
 model.to(device)
@@ -195,8 +208,14 @@ for epoch in tqdm(range(args.epoch)):
         err = err_t_domain + err_s_label + err_s_domain
         err.backward()
         optim.step()
+        # 检查一下梯度
         train_loss.update(err.item(), batch_size)
-
+    writer.add_histogram('last feature weight', model.feature[4].weight, epoch)
+    writer.add_histogram('last feature grad', model.feature[4].weight.grad, epoch)
+    writer.add_histogram('classifier weight', model.classifier.weight, epoch)
+    writer.add_histogram('classifier grad', model.classifier.weight.grad, epoch)
+    writer.add_histogram('domain weight', model.domain[0].weight, epoch)
+    writer.add_histogram('domain grad', model.domain[0].weight.grad, epoch)
     train_loss_history.append(train_loss.avg())
 
 
@@ -231,3 +250,5 @@ plt.show()
 # 训练之后MNIST 准确率是 0.2842
 # 训练之后的SVHN的准确率是 0.0683
 # dev loss是在涨的
+# 后来发现apply没有加上去
+# 重新训

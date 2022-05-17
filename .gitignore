@@ -2,3 +2,5 @@ data/*
 **/build
 !/*.jpg
 **/calibration
+pytorch/runs/
+mnist/log/

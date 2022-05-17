@@ -180,7 +180,8 @@ for epoch in tqdm(range(args.epoch)):
         train_loss.update(_loss_.item(), X.shape[0])
         train_acc.update((out.argmax(dim = 1) == y).sum().item() / X.shape[0], X.shape[0])
     train_loss_history.append(train_loss.avg())
-    train_acc_history.append(train_loss.avg())
+    # 之前这里写错了train_acc_history.append(train_loss.avg())
+    train_loss_history.append(train_acc.avg())
     model.eval()
     with torch.no_grad():
         for X, y in mnist_test_iter:
