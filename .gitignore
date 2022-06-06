@@ -4,3 +4,8 @@ data/*
 **/calibration
 pytorch/runs/
 mnist/log/
+*.mp4
+*.jpg
+**/log
+*.pth
+kaggle/housing_price/data
